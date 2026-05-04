@@ -137,6 +137,22 @@ app.post('/api/claude', async (req, res) => {
     res.status(response.status).json(data);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
-
+// ── Run outreach agent ──
+app.post('/run-agent', async (req, res) => {
+  const secret = req.headers['x-agent-secret'];
+  if (secret !== process.env.AGENT_SECRET) {
+    return res.status(401).json({ error: 'Unauthorised' });
+  }
+  res.json({ status: 'Agent triggered', time: new Date().toISOString() });
+  try {
+    const { execFile } = require('child_process');
+    execFile('node', ['agent.js', '--run-now'], { cwd: '/app' }, (err, stdout, stderr) => {
+      console.log('Agent output:', stdout);
+      if (err) console.error('Agent error:', err);
+    });
+  } catch(err) {
+    console.error('Failed to trigger agent:', err);
+  }
+});
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Lu Dashboard Proxy running on port ${PORT}`));
